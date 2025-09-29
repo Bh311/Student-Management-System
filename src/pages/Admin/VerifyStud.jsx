@@ -1,55 +1,104 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Search } from 'lucide-react';
 import Hero from '../../components/CommonComponent/HeroSection';
 import StatusFilter from '../../components/AdminComponent/StatusFilter';
 import RecentApplications from '../../components/AdminComponent/RecentApplication';
+import axios from 'axios';
 
 export default function VerifyAdmissions() {
-  // Application data is now defined in the parent component
-  const recentApplications = [
-    {
-      id: 'APP001',
-      name: 'John Smith',
-      email: 'john.smith@email.com',
-      program: 'Computer Science',
-      grade: '95%',
-      submittedDate: '2024-03-15',
-      status: 'Applied',
-    },
-    {
-      id: 'APP002',
-      name: 'Sarah Johnson',
-      email: 'sarah.j@email.com',
-      program: 'Mechanical Engineering',
-      grade: '88%',
-      submittedDate: '2024-03-14',
-      status: 'Verified',
-    },
-    {
-      id: 'APP003',
-      name: 'Mike Davis',
-      email: 'mike.davis@email.com',
-      program: 'Business Administration',
-      grade: '92%',
-      submittedDate: '2024-03-12',
-      status: 'Enrolled',
-    },
-  ];
-
-  // State to manage the selected filter option
+  const [applications, setApplications] = useState([]);
   const [selectedStatus, setSelectedStatus] = useState('All Status');
+  const [isLoadingApplications, setIsLoadingApplications] = useState(true);
+  const [isLoadingStats, setIsLoadingStats] = useState(true);
+  const [error, setError] = useState(null);
+  const [currentPage, setCurrentPage] = useState(1);
+  const [totalDocuments, setTotalDocuments] = useState(0);
+  const [statsData, setStatsData] = useState(null);
+  const [searchQuery, setSearchQuery] = useState("");
+  const itemsPerPage = 10;
+  
+  // Correctly define the handleStatusUpdate function at the top level
+  const handleStatusUpdate = (updatedApplication) => {
+      setApplications(prevApplications =>
+          prevApplications.map(app =>
+              app._id === updatedApplication._id ? updatedApplication : app
+          )
+      );
+  };
 
-  // Filter the applications based on the selected status
-  const filteredApplications = recentApplications.filter(app => {
+  // useEffect to fetch paginated applications data with search query
+  useEffect(() => {
+    const fetchApplications = async () => {
+      setIsLoadingApplications(true);
+      setError(null);
+      try {
+        const url = `http://localhost:3000/api/admin/admissions/dashboard/applications?page=${currentPage}&limit=${itemsPerPage}&name=${searchQuery}`;
+        const response = await axios.get(url);
+        
+        setApplications(response.data.data);
+        setTotalDocuments(response.data.totalDocuments);
+      } catch (err) {
+        if (err.response && err.response.status === 404) {
+          setApplications([]);
+          setTotalDocuments(0);
+        } else if (err.response?.status === 401) {
+          setError("You are not authorized. Please log in as an admin.");
+        } else {
+          setError("Failed to fetch applications. Please try again.");
+        }
+      } finally {
+        setIsLoadingApplications(false);
+      }
+    };
+    
+    const delayDebounceFn = setTimeout(() => {
+      fetchApplications();
+    }, 500); 
+
+    return () => clearTimeout(delayDebounceFn);
+  }, [searchQuery, currentPage]);
+
+  // useEffect to fetch statistics data (runs only once)
+  useEffect(() => {
+    const fetchStats = async () => {
+      try {
+        const url = `http://localhost:3000/api/admin/admissions/dashboard/stats`;
+        const response = await axios.get(url);
+        setStatsData(response.data.data);
+      } catch (err) {
+        console.error("Error fetching stats:", err);
+        setError("Failed to fetch dashboard statistics.");
+      } finally {
+        setIsLoadingStats(false);
+      }
+    };
+    fetchStats();
+  }, []);
+
+  const handleSearchChange = (e) => {
+    setSearchQuery(e.target.value);
+    setCurrentPage(1);
+  };
+  
+  const filteredApplications = applications.filter(app => {
     if (selectedStatus === 'All Status') {
-      return true; // Show all applications
+      return true;
     }
     return app.status === selectedStatus;
   });
 
+  const totalPages = Math.ceil(totalDocuments / itemsPerPage);
+
+  if (isLoadingApplications || isLoadingStats) {
+    return <div className="p-8 text-center text-gray-500">Loading dashboard data...</div>;
+  }
+
+  if (error) {
+    return <div className="p-8 text-center text-red-600">{error}</div>;
+  }
+
   return (
     <div className="p-8 bg-gray-100">
-      {/* Header section with Title, Search, and Filter */}
       <div className="flex items-center justify-between p-4 bg-white rounded-lg shadow mb-6">
         <h1 className="text-2xl font-bold text-gray-800">Verify Admissions</h1>
         <div className="flex items-center space-x-4">
@@ -59,23 +108,55 @@ export default function VerifyAdmissions() {
               type="text"
               placeholder="Search applications..."
               className="bg-transparent border-none focus:outline-none ml-2 text-gray-700"
+              value={searchQuery}
+              onChange={handleSearchChange}
             />
           </div>
-          {/* StatusFilter now receives props to control its state */}
           <StatusFilter selectedOption={selectedStatus} setSelectedOption={setSelectedStatus} />
         </div>
       </div>
       
-      {/* Hero cards section */}
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6 mb-6">
-        <Hero title="New Applications" value="248" valueColor="text-blue-600" />
-        <Hero title="Verified" value="156" valueColor="text-green-600" />
-        <Hero title="Enrolled" value="89" valueColor="text-purple-600" />
-        <Hero title="Pending Review" value="12" valueColor="text-red-600" />
-      </div>
+      {statsData && (
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6 mb-6">
+          <Hero title="Total Applications" value={statsData.total} valueColor="text-blue-600" />
+          <Hero title="Verified" value={statsData.verified} valueColor="text-green-600" />
+          <Hero title="Enrolled" value={statsData.enrolled} valueColor="text-purple-600" />
+          <Hero title="Pending Review" value={statsData.pendingReview} valueColor="text-red-600" />
+        </div>
+      )}
 
-      {/* Pass the filtered data to RecentApplications */}
-      <RecentApplications applications={filteredApplications} />
+      {/* Correctly pass the status update handler as a prop */}
+      <RecentApplications applications={filteredApplications} onStatusUpdate={handleStatusUpdate} />
+
+      {totalPages > 1 && (
+        <div className="flex justify-center mt-6 space-x-2">
+          <button
+            onClick={() => setCurrentPage(prev => Math.max(prev - 1, 1))}
+            disabled={currentPage === 1}
+            className="px-4 py-2 rounded-lg bg-gray-200 text-gray-700 disabled:opacity-50"
+          >
+            Previous
+          </button>
+          {Array.from({ length: totalPages }, (_, i) => i + 1).map(page => (
+            <button
+              key={page}
+              onClick={() => setCurrentPage(page)}
+              className={`px-4 py-2 rounded-lg ${
+                currentPage === page ? 'bg-blue-500 text-white' : 'bg-gray-200 text-gray-700'
+              }`}
+            >
+              {page}
+            </button>
+          ))}
+          <button
+            onClick={() => setCurrentPage(prev => Math.min(prev + 1, totalPages))}
+            disabled={currentPage === totalPages}
+            className="px-4 py-2 rounded-lg bg-gray-200 text-gray-700 disabled:opacity-50"
+          >
+            Next
+          </button>
+        </div>
+      )}
     </div>
   );
 }

@@ -2,7 +2,8 @@
 import React, { useState } from 'react';
 import { Search, RotateCw, CircleDollarSign } from 'lucide-react';
 import Hero from '../../components/CommonComponent/HeroSection';
-import StudentFeeStatusCard from '../../components/AdminComponent/Feescard'; // Import the new component
+import StudentFeeStatusCard from '../../components/AdminComponent/Feescard'; 
+import FeeStructure from '../../components/AdminComponent/CreateFeeStrucutre';
 
 export default function ManageFees() {
   // Mock data for the Hero sections
