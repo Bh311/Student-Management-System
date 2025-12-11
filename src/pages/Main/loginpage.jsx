@@ -1,11 +1,9 @@
 import React, { useState } from 'react';
 import { useNavigate, Link } from "react-router-dom";
-import axios from 'axios'; // Still imported, but not used in handleSubmit
-import Cookies from 'js-cookie'; // Still imported, but not used in handleSubmit
+import axios from 'axios';
+import Cookies from 'js-cookie';
 import Logo from "../../images/Logo.png";
 import Toggle from "../../components/CommonComponent/Toggle"; 
-
-// WARNING: This version COMPLETELY bypasses authentication and is only for front-end testing.
 
 export default function Login() {
     const [role, setRole] = useState("admin");
@@ -27,27 +25,43 @@ export default function Login() {
         setLoading(true);
         setError("");
 
-        // TEMPORARY: Remove all API interaction and authentication logic
-        // We simulate a successful login instantly.
-        
-        // --- START SIMULATION ---
-        if (email && password) {
-            // Set the role in local storage so the ProtectedRoute will pass the check
-            localStorage.setItem("role", role); 
-            localStorage.setItem("email", email);
-            localStorage.setItem("token", "FAKE_TOKEN_FOR_DEBUG"); // Dummy token
+        try {
+            const url = `/api/${role}/login`; 
+            const response = await axios.post(url, { email, password }, { withCredentials: true });
 
-            if (role === "admin") {
-                navigate("/admindash");
+            if (response.data.success) {
+                const token = response.data.token;
+                const userRole = role; // <--- FINAL FIX: Use the component's state 'role'
+                
+                // Set cookies for authentication check (insecurely)
+                Cookies.set("token", token, { expires: 7, sameSite: "Lax" });
+                Cookies.set("role", userRole, { expires: 7, sameSite: "Lax" });
+                
+                // Save token and role to localStorage to feed the Axios Interceptor
+                localStorage.setItem("token", token);
+                localStorage.setItem("role", userRole);
+                localStorage.setItem("email", email); 
+
+                console.log("Login successful! Forcing page reload.");
+                
+                // Use window.location.href to force the full security check
+                if (userRole === "admin") {
+                    window.location.href = "/admindash";
+                } else {
+                    window.location.href = "/studentdash";
+                }
             } else {
-                navigate("/studentdash");
+                setError(response.data.message || "Invalid credentials");
             }
-        } else {
-            setError("Please enter email and password.");
+        } catch (err) {
+            if (err.response) {
+                setError(err.response.data.message || "Login failed. Please check your credentials.");
+            } else {
+                setError("Network error. Could not connect to the server (Is the backend running?).");
+            }
+        } finally {
+            setLoading(false);
         }
-        // --- END SIMULATION ---
-
-        setLoading(false);
     };
 
     return (
@@ -58,8 +72,8 @@ export default function Login() {
                 </div>
                 <div className="grid grid-cols-3 gap-6">
                     <Link to="/" className="text-shadow-2xs">Home</Link>
-                    <a href="#about" className="text-shadow-2xs">About</a>
-                    <a href="#contact" className="text-shadow-2xs">Contact</a>
+                    <a href="#about">About</a>
+                    <a href="#contact">Contact</a>
                 </div>
             </section>
 

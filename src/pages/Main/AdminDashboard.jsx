@@ -5,6 +5,7 @@ import Header from "../../components/CommonComponent/DashHead";
 import Sidebar from "../../components/CommonComponent/DashBar";
 import Analytics from "../Admin/Analytics";
 import VerifyAdmissions from "../Admin/VerifyStud";
+import CreateFeeStructure from "../../components/AdminComponent/CreateFeeStrucutre"
 import ManageFees from "../Admin/FeeManage";
 import HostelManagement from "../Admin/HostelManage";
 import ExamUploads from "../Admin/ExamUploads";

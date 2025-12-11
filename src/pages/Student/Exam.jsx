@@ -86,7 +86,7 @@ export default function ExamContent() {
             </div>
 
             {/* Tab switcher */}
-            <div className="flex justify-start mb-6">
+            <div className="grid grid-cols-2 mb-6">
                 <TabSwitcher tabs={tabs} activeTab={activeTab} onTabChange={setActiveTab} />
             </div>
 

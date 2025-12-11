@@ -1,4 +1,3 @@
-// PersonalInfo.jsx
 import React from 'react';
 
 export default function PersonalInfo({ formData, setFormData, setProfilePic }) {
@@ -120,7 +119,39 @@ export default function PersonalInfo({ formData, setFormData, setProfilePic }) {
                     />
                 </div>
 
-                {/* Profile Picture (Required) */}
+                {/* 🏠 Hostel Request (Yes/No) */}
+                <div className="flex flex-col">
+                    <label className="mb-1">
+                        Hostel Required? <span className="text-red-600">*</span>
+                    </label>
+                    <div className="flex gap-6 mt-1">
+                        <label className="flex items-center gap-2">
+                            <input
+                                type="radio"
+                                name="isRequested"
+                                value="true"
+                                checked={formData.isRequested === "true"}
+                                onChange={handleChange}
+                                required
+                            />
+                            Yes
+                        </label>
+
+                        <label className="flex items-center gap-2">
+                            <input
+                                type="radio"
+                                name="isRequested"
+                                value="false"
+                                checked={formData.isRequested === "false"}
+                                onChange={handleChange}
+                                required
+                            />
+                            No
+                        </label>
+                    </div>
+                </div>
+
+                {/* Profile Picture */}
                 <div className="flex flex-col col-span-2">
                     <label className="mb-1">
                         Profile Picture <span className="text-red-600">*</span>

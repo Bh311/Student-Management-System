@@ -25,7 +25,7 @@ export default function HostelContent() {
     return (
         <div className="p-8 bg-gray-100">
             <HostelDetails />
-            <div className="m-6 flex justify-start">
+            <div className="m-6 grid grid-cols-2">
                 <TabSwitcher tabs={tabs} activeTab={activeTab} onTabChange={setActiveTab} />
             </div>
             {renderTabContent()}

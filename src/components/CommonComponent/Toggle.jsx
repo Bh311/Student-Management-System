@@ -1,23 +1,27 @@
-// Toggle.jsx
+import React from "react";
 
-import React from 'react';
-
-export default function Toggle({ role, setRole, email, setEmail, password, setPassword, loading, error, handleSubmit }) {
+export default function Toggle({
+    role,
+    setRole,
+    email,
+    setEmail,
+    password,
+    setPassword,
+    loading,
+    error,
+    handleSubmit
+}) {
     return (
         <div className="bg-white shadow-lg rounded-lg p-8 w-[400px]">
             <h2 className="text-2xl font-semibold mb-6 text-center">
                 {role === "admin" ? "Admin Login" : "Student Login"}
             </h2>
             {error && (
-                <p className="text-red-500 text-center mb-4 animate-pulse">
-                    {error}
-                </p>
+                <p className="text-red-500 text-center mb-4 animate-pulse">{error}</p>
             )}
             <form className="space-y-4" onSubmit={handleSubmit}>
                 <div className="flex flex-col">
-                    <label className="mb-1">
-                        Email <span className="text-red-500">*</span>
-                    </label>
+                    <label className="mb-1">Email <span className="text-red-500">*</span></label>
                     <input
                         type="email"
                         required
@@ -28,9 +32,7 @@ export default function Toggle({ role, setRole, email, setEmail, password, setPa
                     />
                 </div>
                 <div className="flex flex-col">
-                    <label className="mb-1">
-                        Password <span className="text-red-500">*</span>
-                    </label>
+                    <label className="mb-1">Password <span className="text-red-500">*</span></label>
                     <input
                         type="password"
                         required
@@ -48,26 +50,19 @@ export default function Toggle({ role, setRole, email, setEmail, password, setPa
                     {loading ? "Logging in..." : "Login"}
                 </button>
             </form>
+
             <p className="mt-4 text-center text-sm text-gray-600">
                 {role === "admin" ? (
                     <>
                         Login as Admin.{" "}
-                        <button
-                            type="button"
-                            onClick={() => setRole("student")}
-                            className="text-blue-600 hover:underline"
-                        >
+                        <button type="button" onClick={() => setRole("student")} className="text-blue-600 hover:underline">
                             Switch to Student
                         </button>
                     </>
                 ) : (
                     <>
                         Login as Student.{" "}
-                        <button
-                            type="button"
-                            onClick={() => setRole("admin")}
-                            className="text-blue-600 hover:underline"
-                        >
+                        <button type="button" onClick={() => setRole("admin")} className="text-blue-600 hover:underline">
                             Switch to Admin
                         </button>
                     </>

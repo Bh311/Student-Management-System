@@ -1,65 +1,91 @@
-// src/components/Admin/FeeManage.jsx
-import React, { useState } from 'react';
-import { Search, RotateCw, CircleDollarSign } from 'lucide-react';
-import Hero from '../../components/CommonComponent/HeroSection';
-import StudentFeeStatusCard from '../../components/AdminComponent/Feescard'; 
-import FeeStructure from '../../components/AdminComponent/CreateFeeStrucutre';
+import React, { useState, useEffect } from "react";
+import { Search, RotateCw, CircleDollarSign } from "lucide-react";
+import Hero from "../../components/CommonComponent/HeroSection";
+import StudentFeeStatusCard from "../../components/AdminComponent/Feescard";
+import FeeStructure from "../../components/AdminComponent/FeeStructures";
+import axios from "axios";
 
 export default function ManageFees() {
-  // Mock data for the Hero sections
-  const heroData = {
-    totalCollected: "₹12.4L",
-    pendingAmount: "₹3.2L",
-    collectionRate: "79%",
-    overdue: "₹85K"
-  };
+  const [heroData, setHeroData] = useState({
+    totalCollected: "₹0",
+    pendingAmount: "₹0",
+    collectionRate: "0%",
+    overdue: "0",
+  });
 
-  // State for the student fee status list
-  const [studentFeeData, setStudentFeeData] = useState([
-    {
-      id: "STU001",
-      initials: "JD",
-      name: "John Doe",
-      program: "Computer Science",
-      totalFees: "₹102K",
-      paidFees: "₹75K",
-      pendingFees: "₹27K",
-      progress: "74%",
-      status: "Partial",
-    },
-    {
-      id: "STU002",
-      initials: "SJ",
-      name: "Sarah Johnson",
-      program: "Mechanical Eng.",
-      totalFees: "₹98K",
-      paidFees: "₹98K",
-      pendingFees: "₹0K",
-      progress: "100%",
-      status: "Paid",
-    },
-    {
-      id: "STU003",
-      initials: "MD",
-      name: "Mike Davis",
-      program: "Business Admin",
-      totalFees: "₹85K",
-      paidFees: "₹0K",
-      pendingFees: "₹85K",
-      progress: "0%",
-      status: "Unpaid",
-    },
-  ]);
+  const [studentFeeData, setStudentFeeData] = useState([]);
+  const [searchTerm, setSearchTerm] = useState("");
 
-  // Handler for updating student status (can be used for 'View' or 'Receipt')
-  const handleUpdateStatus = (studentId, newStatus) => {
-    console.log(`Updating status for student ${studentId} to ${newStatus}`);
-    // You would typically send an API request here
-  };
+  useEffect(() => {
+    const fetchData = async () => {
+      try {
+        // ✅ Fetch stats for hero section
+        const statsRes = await axios.get(`/api/admin/fees/stats`);
+        const stats = statsRes.data.data;
+
+        const formatCurrency = (amount) =>
+          `₹${Number(amount).toLocaleString("en-IN")}`;
+
+        setHeroData({
+          totalCollected: formatCurrency(stats.totalCollected || 0),
+          pendingAmount: formatCurrency(stats.pendingAmount || 0),
+          collectionRate: `${stats.collectionRate || 0}%`,
+          overdue: stats.overdue?.toString() || "0",
+        });
+
+        // ✅ Fetch student fee accounts
+        const accountsRes = await axios.get(`/api/admin/fees/accounts`);
+        const students = accountsRes.data.data;
+
+        const formattedData = students
+          .filter((s) => s.student)
+          .map((s) => {
+            const initials = s.student.fullname
+              .split(" ")
+              .map((n) => n[0])
+              .join("")
+              .toUpperCase();
+
+            const formatCurrency = (amount) =>
+              `₹${Number(amount).toLocaleString("en-IN")}`;
+
+            const progress =
+              s.totalFee > 0
+                ? ((s.paid / s.totalFee) * 100).toFixed(0) + "%"
+                : "0%";
+
+            return {
+              accountId: s.student._id, // ✅ FeeAccount ID used for /accounts/:id
+              studentId: s.student.studentID,
+              initials,
+              name: s.student.fullname,
+              program: s.student.academics.course,
+              totalFees: formatCurrency(s.totalFee),
+              paidFees: formatCurrency(s.paid),
+              pendingFees: formatCurrency(s.balance),
+              progress,
+              status: s.status,
+              image: s.student.profilePic?.url || "",
+            };
+          });
+
+        setStudentFeeData(formattedData);
+      } catch (error) {
+        console.error("Error fetching fee data:", error);
+      }
+    };
+
+    fetchData();
+  }, []);
+
+  // 🔍 Search Filter
+  const filteredStudents = studentFeeData.filter((s) =>
+    s.name.toLowerCase().includes(searchTerm.toLowerCase())
+  );
 
   return (
     <div className="p-8 bg-gray-100">
-      {/* Header with Title and Sync Button */}
+      {/* Header */}
       <div className="flex items-center justify-between p-4 bg-white rounded-lg shadow mb-6">
         <h1 className="text-2xl font-bold text-gray-800">Fee Management</h1>
         <div className="flex items-center space-x-4">
@@ -68,17 +94,22 @@ export default function ManageFees() {
             <input
               type="text"
               placeholder="Search students..."
+              value={searchTerm}
+              onChange={(e) => setSearchTerm(e.target.value)}
               className="bg-transparent border-none focus:outline-none ml-2 text-gray-700"
             />
           </div>
-          <button className="flex items-center space-x-2 px-4 py-2 bg-gray-900 text-white rounded-lg hover:bg-gray-700 transition-colors">
+          <button
+            onClick={() => window.location.reload()}
+            className="flex items-center space-x-2 px-4 py-2 bg-gray-900 text-white rounded-lg hover:bg-gray-700 transition-colors"
+          >
             <RotateCw size={16} />
             <span>Sync Payments</span>
           </button>
         </div>
       </div>
-      
-      {/* Hero Cards Section */}
+
+      {/* Hero Section */}
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6 mb-6">
         <Hero
           title="Total Collected"
@@ -91,7 +122,7 @@ export default function ManageFees() {
         <Hero
           title="Pending Amount"
           value={heroData.pendingAmount}
-          status="45 students"
+          status="Students with pending dues"
           icon={<CircleDollarSign size={20} className="text-orange-500" />}
           color="bg-orange-100"
           statusColor="text-gray-500"
@@ -99,14 +130,13 @@ export default function ManageFees() {
         <Hero
           title="Collection Rate"
           value={heroData.collectionRate}
-          status={null}
           icon={<CircleDollarSign size={20} className="text-blue-600" />}
           color="bg-blue-100"
         />
         <Hero
           title="Overdue"
           value={heroData.overdue}
-          status="12 students"
+          status="Students unpaid"
           icon={<CircleDollarSign size={20} className="text-red-600" />}
           color="bg-red-100"
         />
@@ -114,10 +144,21 @@ export default function ManageFees() {
 
       {/* Student Fee Status Section */}
       <div>
-        <h2 className="text-xl font-bold text-gray-800 mb-4">Student Fee Status</h2>
-        {studentFeeData.map((student) => (
-          <StudentFeeStatusCard key={student.id} student={student} />
-        ))}
+        <h2 className="text-xl font-bold text-gray-800 mb-4">
+          Student Fee Status
+        </h2>
+        {filteredStudents.length > 0 ? (
+          filteredStudents.map((student) => (
+            <StudentFeeStatusCard key={student.accountId} student={student} />
+          ))
+        ) : (
+          <p className="text-gray-600">No students found.</p>
+        )}
+      </div>
+
+      {/* Fee Structures Section */}
+      <div>
+        <FeeStructure />
       </div>
     </div>
   );

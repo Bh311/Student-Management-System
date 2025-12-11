@@ -20,6 +20,7 @@ export default function ApplicationForm() {
         dob: "",
         gender: "",
         address: "",
+        isRequested: "false",
         academics: {
             course: "",
             semester: "1",
@@ -33,8 +34,8 @@ export default function ApplicationForm() {
 
     const validateStep = () => {
         if (step === 1) {
-            const { fullname, email, phone, dob, gender, address } = formData;
-            if (!fullname || !email || !phone || !dob || !gender || !address || !profilePic) {
+            const { fullname, email, phone, dob, gender, address,isRequested } = formData;
+            if (!fullname || !email || !phone || !dob || !gender || !address || !profilePic || !isRequested) {
                 setError("⚠️ Please fill all required Personal Info fields and upload a profile picture!");
                 return false;
             }
@@ -82,6 +83,7 @@ export default function ApplicationForm() {
                 data.append("dob", formData.dob);
                 data.append("gender", formData.gender);
                 data.append("address", formData.address);
+                data.append("isRequested", formData.isRequested);
 
                 data.append("course", formData.academics.course);
                 data.append("semester", formData.academics.semester);
@@ -99,7 +101,7 @@ export default function ApplicationForm() {
                 }
 
                 const response = await axios.post(
-                    "http://localhost:3000/api/student/apply",
+                    `api/student/apply`,
                     data,
                     {
                         headers: {

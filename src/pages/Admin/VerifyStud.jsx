@@ -15,9 +15,24 @@ export default function VerifyAdmissions() {
   const [totalDocuments, setTotalDocuments] = useState(0);
   const [statsData, setStatsData] = useState(null);
   const [searchQuery, setSearchQuery] = useState("");
+  const [refreshKey, setRefreshKey] = useState(0); // <-- NEW STATE TRIGGER
   const itemsPerPage = 10;
   
-  // Correctly define the handleStatusUpdate function at the top level
+  // Define fetchStats so it can be called later for a refresh
+  const fetchStats = async () => {
+      try {
+          const url = `/api/admin/admissions/dashboard/stats`;
+          const response = await axios.get(url);
+          setStatsData(response.data.data);
+      } catch (err) {
+          console.error("Error fetching stats:", err);
+          setError("Failed to fetch dashboard statistics.");
+      } finally {
+          setIsLoadingStats(false);
+      }
+  };
+  
+  // Function for simple, local status updates (Verify, Reject)
   const handleStatusUpdate = (updatedApplication) => {
       setApplications(prevApplications =>
           prevApplications.map(app =>
@@ -26,13 +41,23 @@ export default function VerifyAdmissions() {
       );
   };
 
-  // useEffect to fetch paginated applications data with search query
+  // CRITICAL FIX: Function to handle complex updates (Enroll) by forcing a full data refresh
+  const handleEnrollSuccess = () => {
+      // 1. Increment the key to force the applications useEffect to re-run
+      setRefreshKey(prevKey => prevKey + 1); 
+      // 2. Also reset the page to 1
+      setCurrentPage(1); 
+      // 3. Force stats to re-fetch
+      fetchStats();
+  };
+
+  // useEffect to fetch paginated applications data (runs on search, page, or refreshKey change)
   useEffect(() => {
     const fetchApplications = async () => {
       setIsLoadingApplications(true);
       setError(null);
       try {
-        const url = `http://localhost:3000/api/admin/admissions/dashboard/applications?page=${currentPage}&limit=${itemsPerPage}&name=${searchQuery}`;
+        const url = `/api/admin/admissions/dashboard/applications?page=${currentPage}&limit=${itemsPerPage}&name=${searchQuery}`;
         const response = await axios.get(url);
         
         setApplications(response.data.data);
@@ -55,23 +80,12 @@ export default function VerifyAdmissions() {
       fetchApplications();
     }, 500); 
 
+    // CRITICAL: Add refreshKey to the dependency array
     return () => clearTimeout(delayDebounceFn);
-  }, [searchQuery, currentPage]);
+  }, [searchQuery, currentPage, refreshKey]); 
 
-  // useEffect to fetch statistics data (runs only once)
+  // useEffect to fetch statistics data (runs once on mount and is called by handleEnrollSuccess)
   useEffect(() => {
-    const fetchStats = async () => {
-      try {
-        const url = `http://localhost:3000/api/admin/admissions/dashboard/stats`;
-        const response = await axios.get(url);
-        setStatsData(response.data.data);
-      } catch (err) {
-        console.error("Error fetching stats:", err);
-        setError("Failed to fetch dashboard statistics.");
-      } finally {
-        setIsLoadingStats(false);
-      }
-    };
     fetchStats();
   }, []);
 
@@ -125,8 +139,12 @@ export default function VerifyAdmissions() {
         </div>
       )}
 
-      {/* Correctly pass the status update handler as a prop */}
-      <RecentApplications applications={filteredApplications} onStatusUpdate={handleStatusUpdate} />
+      {/* Pass both the simple update handler and the full re-fetch handler */}
+      <RecentApplications 
+          applications={filteredApplications} 
+          onStatusUpdate={handleStatusUpdate} 
+          onEnrollSuccess={handleEnrollSuccess} // <-- This is now passed!
+      />
 
       {totalPages > 1 && (
         <div className="flex justify-center mt-6 space-x-2">

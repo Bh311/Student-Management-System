@@ -1,7 +1,9 @@
 import React from 'react';
 import ApplicationCard from '../CommonComponent/ApplicationCard'; 
 
-export default function RecentApplications({ applications, onStatusUpdate }) {
+// CRITICAL FIX: The component must receive the onEnrollSuccess prop from the parent (VerifyAdmissions)
+export default function RecentApplications({ applications, onStatusUpdate, onEnrollSuccess }) {
+  
   // Check if the applications array is empty
   if (applications.length === 0) {
     return (
@@ -18,7 +20,9 @@ export default function RecentApplications({ applications, onStatusUpdate }) {
         <ApplicationCard 
             key={application._id} 
             application={application} 
-            onStatusUpdate={onStatusUpdate} // This is now a correctly passed prop
+            onStatusUpdate={onStatusUpdate}
+            // CRITICAL FIX: Pass the new function down to ApplicationCard
+            onEnrollSuccess={onEnrollSuccess} 
         />
       ))}
     </div>
